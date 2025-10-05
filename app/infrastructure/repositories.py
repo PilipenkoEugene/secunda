@@ -1,5 +1,6 @@
 import math
 
+from fastapi import HTTPException
 from sqlalchemy import select, func, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, aliased
@@ -9,6 +10,7 @@ from app.domain.repositories import AbstractRepository, AbstractBuildingReposito
 from typing import Type, TypeVar, List
 
 T = TypeVar('T')
+
 
 class BaseSqlAlchemyRepository(AbstractRepository[T]):
     def __init__(self, session: AsyncSession, model: Type[T]):
@@ -42,9 +44,11 @@ class BaseSqlAlchemyRepository(AbstractRepository[T]):
         await self.session.delete(entity)
         await self.session.commit()
 
+
 class BuildingRepository(BaseSqlAlchemyRepository[Building], AbstractBuildingRepository):
     def __init__(self, session: AsyncSession):
         super().__init__(session, Building)
+
 
 class ActivityRepository(BaseSqlAlchemyRepository[Activity], AbstractActivityRepository):
     def __init__(self, session: AsyncSession):
@@ -55,15 +59,33 @@ class ActivityRepository(BaseSqlAlchemyRepository[Activity], AbstractActivityRep
         return result.scalars().first()
 
     async def get_sub_activities(self, activity_id: int, depth: int = 3) -> List[Activity]:
-        activity = await self.get_by_id(activity_id)
-        if not activity or depth == 0:
+        if depth <= 0:
             return []
-        result = await self.session.execute(select(Activity).filter(Activity.parent_id == activity_id))
-        subs = result.scalars().all()
-        result_list = [activity]
-        for sub in subs:
-            result_list += await self.get_sub_activities(sub.id, depth - 1)
-        return result_list
+
+        root = await self.get_by_id(activity_id)
+        if not root:
+            return []
+
+        base = select(
+            Activity.id,
+            Activity.parent_id,
+            func.cast(0, Integer).label("level")
+        ).where(Activity.id == activity_id).cte(name="activity_tree", recursive=True)
+
+        activity_alias = aliased(Activity)
+        recursive = select(
+            activity_alias.id,
+            activity_alias.parent_id,
+            (base.c.level + 1).label("level")
+        ).select_from(activity_alias).where(
+            activity_alias.parent_id == base.c.id
+        ).where(base.c.level < depth)
+
+        cte = base.union_all(recursive)
+
+        stmt = select(Activity).where(Activity.id.in_(select(cte.c.id)))
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
 
     async def get_depth(self, activity_id: int) -> int:
         if activity_id is None:
@@ -95,23 +117,25 @@ class ActivityRepository(BaseSqlAlchemyRepository[Activity], AbstractActivityRep
         result = await self.session.execute(stmt)
         return result.scalar()
 
-class OrganizationRepository:
+
+class OrganizationRepository(BaseSqlAlchemyRepository[Organization]):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(session, Organization)
+
+    def _with_relations(self, stmt):
+        return stmt.options(
+            joinedload(Organization.building),
+            joinedload(Organization.activities)
+        )
 
     async def get_all(self) -> List[Organization]:
-        result = await self.session.execute(
-            select(Organization)
-            .options(joinedload(Organization.building), joinedload(Organization.activities))
-        )
+        stmt = self._with_relations(select(Organization))
+        result = await self.session.execute(stmt)
         return result.unique().scalars().all()
 
     async def get_by_id(self, org_id: int) -> Organization | None:
-        result = await self.session.execute(
-            select(Organization)
-            .options(joinedload(Organization.building), joinedload(Organization.activities))
-            .where(Organization.id == org_id)
-        )
+        stmt = self._with_relations(select(Organization)).where(Organization.id == org_id)
+        result = await self.session.execute(stmt)
         return result.unique().scalars().first()
 
     async def create(
@@ -121,6 +145,9 @@ class OrganizationRepository:
         building_id: int,
         activity_ids: list[int]
     ) -> Organization:
+        if activity_ids and len(activity_ids) != len(set(activity_ids)):
+            raise ValueError("Duplicate activity IDs are not allowed")
+
         building = await self.session.get(Building, building_id)
         if not building:
             raise ValueError(f"Building with id {building_id} not found")
@@ -131,8 +158,8 @@ class OrganizationRepository:
                 select(Activity).where(Activity.id.in_(activity_ids))
             )
             activities = list(result.scalars().all())
-            if len(activities) != len(set(activity_ids)):
-                raise ValueError("One or more activity IDs are invalid or duplicated")
+            if len(activities) != len(activity_ids):
+                raise ValueError("One or more activity IDs are invalid")
 
         organization = Organization(
             name=name,
@@ -143,35 +170,37 @@ class OrganizationRepository:
 
         self.session.add(organization)
         await self.session.commit()
-        await self.session.refresh(organization, attribute_names=["id", "name", "phones", "building", "activities"])
+        await self.session.refresh(
+            organization,
+            attribute_names=["id", "name", "phones", "building", "activities"]
+        )
         return organization
 
     async def update(self, organization: Organization, **kwargs) -> Organization:
-        if "name" in kwargs and kwargs["name"] is not None:
-            organization.name = kwargs["name"]
-        if "phones" in kwargs and kwargs["phones"] is not None:
-            organization.phones = kwargs["phones"]
-        if "building_id" in kwargs and kwargs["building_id"] is not None:
-            building = await self.session.get(Building, kwargs["building_id"])
-            if not building:
-                raise ValueError(f"Building with id {kwargs['building_id']} not found")
-            organization.building = building
-
         if "activity_ids" in kwargs and kwargs["activity_ids"] is not None:
-            activity_ids = kwargs["activity_ids"]
+            activity_ids = kwargs.pop("activity_ids")
             if activity_ids:
+                if len(activity_ids) != len(set(activity_ids)):
+                    raise HTTPException(status_code=400, detail="Обнаружены дубликаты id организаций")
                 result = await self.session.execute(
                     select(Activity).where(Activity.id.in_(activity_ids))
                 )
                 activities = list(result.scalars().all())
-                if len(activities) != len(set(activity_ids)):
-                    raise ValueError("One or more activity IDs are invalid")
+                if len(activities) != len(activity_ids):
+                    raise HTTPException(status_code=400, detail="Один или более id организаций невалидны")
                 organization.activities = activities
             else:
                 organization.activities = []
 
+        for key, value in kwargs.items():
+            if value is not None:
+                setattr(organization, key, value)
+
         await self.session.commit()
-        await self.session.refresh(organization, attribute_names=["id", "name", "phones", "building", "activities"])
+        await self.session.refresh(
+            organization,
+            attribute_names=["id", "name", "phones", "building", "activities"]
+        )
         return organization
 
     async def delete(self, organization: Organization):
@@ -179,58 +208,51 @@ class OrganizationRepository:
         await self.session.commit()
 
     async def search_by_name(self, name: str) -> List[Organization]:
-        result = await self.session.execute(
-            select(Organization)
-            .options(joinedload(Organization.building), joinedload(Organization.activities))
-            .where(Organization.name.ilike(f"%{name}%"))
-        )
+        stmt = self._with_relations(select(Organization)).where(Organization.name.ilike(f"%{name}%"))
+        result = await self.session.execute(stmt)
         return result.unique().scalars().all()
 
     async def get_by_building(self, building_id: int) -> List[Organization]:
-        result = await self.session.execute(
-            select(Organization)
-            .options(joinedload(Organization.building), joinedload(Organization.activities))
-            .where(Organization.building_id == building_id)
-        )
+        stmt = self._with_relations(select(Organization)).where(Organization.building_id == building_id)
+        result = await self.session.execute(stmt)
         return result.unique().scalars().all()
 
     async def get_by_activity(self, activity_id: int) -> List[Organization]:
-        result = await self.session.execute(
-            select(Organization)
-            .options(joinedload(Organization.building), joinedload(Organization.activities))
+        stmt = (
+            self._with_relations(select(Organization))
             .join(Organization.activities)
             .where(Activity.id == activity_id)
         )
+        result = await self.session.execute(stmt)
         return result.unique().scalars().all()
 
     async def get_in_radius(self, lat: float, lon: float, radius_km: float) -> List[Organization]:
         lat_delta = radius_km / 111.0
-        # Защита от деления на ноль и некорректного cos
         cos_lat = math.cos(math.radians(lat))
         if abs(cos_lat) < 1e-6:
             lon_delta = radius_km / 111.0
         else:
             lon_delta = radius_km / (111.0 * cos_lat)
 
-        result = await self.session.execute(
-            select(Organization)
-            .options(joinedload(Organization.building), joinedload(Organization.activities))
+        stmt = (
+            self._with_relations(select(Organization))
             .join(Organization.building)
             .where(
                 Building.latitude.between(lat - lat_delta, lat + lat_delta) &
                 Building.longitude.between(lon - lon_delta, lon + lon_delta)
             )
         )
+        result = await self.session.execute(stmt)
         return result.unique().scalars().all()
 
     async def get_in_rect(self, min_lat: float, max_lat: float, min_lon: float, max_lon: float) -> List[Organization]:
-        result = await self.session.execute(
-            select(Organization)
-            .options(joinedload(Organization.building), joinedload(Organization.activities))
+        stmt = (
+            self._with_relations(select(Organization))
             .join(Organization.building)
             .where(
                 Building.latitude.between(min_lat, max_lat) &
                 Building.longitude.between(min_lon, max_lon)
             )
         )
+        result = await self.session.execute(stmt)
         return result.unique().scalars().all()

@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List
 
 from fastapi import APIRouter, HTTPException
 from app.adapters.schemas import Building, BuildingCreate, BuildingUpdate
@@ -34,7 +34,7 @@ async def update(building_id: int, building: BuildingUpdate, service: FromDishka
         raise HTTPException(status_code=404, detail=f"Здание с id {building_id} не найдено")
     return await service.update(building_obj, **building.model_dump(exclude_unset=True))
 
-@router.delete("/{building_id}", response_model=Dict, status_code=204)
+@router.delete("/{building_id}", status_code=204)
 @inject
 async def delete(building_id: int, service: FromDishka[BuildingService]):
     building = await service.get_by_id(building_id)

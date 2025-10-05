@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends
 from app.adapters.schemas import Organization, OrganizationCreate, OrganizationUpdate, OrganizationFull, RadiusSearch, RectangleSearch
@@ -62,7 +62,7 @@ async def update(org_id: int, organization: OrganizationUpdate, service: FromDis
         raise HTTPException(status_code=404, detail=f"Организация с id {org_id} не найдена")
     return await service.update(org, **organization.model_dump(exclude_unset=True))
 
-@router.delete("/{org_id}", response_model=Dict, status_code=204)
+@router.delete("/{org_id}", status_code=204)
 @inject
 async def delete(org_id: int, service: FromDishka[OrganizationService]):
     org = await service.get_by_id(org_id)

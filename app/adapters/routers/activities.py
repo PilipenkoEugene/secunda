@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from app.adapters.schemas import Activity, ActivityCreate, ActivityUpdate
@@ -34,7 +34,7 @@ async def update(service: FromDishka[ActivityService], activity_id: int, activit
         raise HTTPException(status_code=404, detail=f"Деятельность с id {activity_id} не найдена")
     return await service.update(activity_obj, **activity.model_dump(exclude_unset=True))
 
-@router.delete("/{activity_id}", response_model=Dict, status_code=204)
+@router.delete("/{activity_id}", status_code=204)
 @inject
 async def delete(activity_id: int, service: FromDishka[ActivityService]):
     activity = await service.get_by_id(activity_id)
