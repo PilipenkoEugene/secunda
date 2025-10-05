@@ -5,7 +5,7 @@ from dishka.integrations.fastapi import setup_dishka
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.adapters.routers.router import router
-from app.infrastructure.dependencies import get_api_key
+from app.adapters.routers.dependencies.dependencies import get_api_key
 from app.infrastructure.di import create_container
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from app.settings import settings

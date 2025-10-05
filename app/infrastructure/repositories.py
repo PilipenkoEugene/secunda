@@ -146,11 +146,11 @@ class OrganizationRepository(BaseSqlAlchemyRepository[Organization]):
         activity_ids: list[int]
     ) -> Organization:
         if activity_ids and len(activity_ids) != len(set(activity_ids)):
-            raise ValueError("Duplicate activity IDs are not allowed")
+            raise HTTPException(status_code=400, detail="Обнаружены дубликаты id организаций")
 
         building = await self.session.get(Building, building_id)
         if not building:
-            raise ValueError(f"Building with id {building_id} not found")
+            raise HTTPException(status_code=400, detail=f"Здание с id {building_id} не найдено")
 
         activities = []
         if activity_ids:
@@ -159,7 +159,7 @@ class OrganizationRepository(BaseSqlAlchemyRepository[Organization]):
             )
             activities = list(result.scalars().all())
             if len(activities) != len(activity_ids):
-                raise ValueError("One or more activity IDs are invalid")
+                raise HTTPException(status_code=400, detail="Один или более id организаций невалидны")
 
         organization = Organization(
             name=name,
