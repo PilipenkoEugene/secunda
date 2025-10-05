@@ -20,7 +20,7 @@ class ActivityService:
         if parent_id:
             parent = await self.activity_repo.get_by_id(parent_id)
             if not parent:
-                raise ValueError("Parent activity not found")
+                raise HTTPException(status_code=400, detail="Родительский вид деятельности не обнаружен")
             if await self.activity_repo.get_depth(parent.id) >= 2:
                 raise HTTPException(status_code=400, detail="Превышен лимит вложенности. Максимальный уровень - 3")
         return await self.activity_repo.create(name=name, parent_id=parent_id)
@@ -39,7 +39,7 @@ class ActivityService:
     async def delete(self, activity_id: int) -> None:
         activity = await self.get_by_id(activity_id)
         if not activity:
-            raise ValueError("Activity not found")
+            raise ValueError(f"Не обнаружена активность с id {activity_id}")
         await self.activity_repo.delete(activity)
 
     async def get_sub_activities(self, activity_id: int) -> List[Activity]:

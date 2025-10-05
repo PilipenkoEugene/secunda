@@ -39,7 +39,7 @@ class OrganizationService:
 
     async def create(self, name: str, phones: list[str], building_id: int, activity_ids: list[int]) -> Organization:
         if not await self.building_repo.get_by_id(building_id):
-            raise HTTPException(status_code=400, detail="Здание с таким id не найдено")
+            raise HTTPException(status_code=400, detail=f"Здание с id {building_id} не найдено")
         for aid in activity_ids:
             if not await self.activity_repo.get_by_id(aid):
                 raise ValueError(f"Activity {aid} not found")
@@ -48,11 +48,11 @@ class OrganizationService:
     async def update(self, org: Organization, name: str = None, phones: list[str] = None, building_id: int = None, activity_ids: list[int] = None) -> Organization:
         if building_id is not None:
             if not await self.building_repo.get_by_id(building_id):
-                raise HTTPException(status_code=400, detail="Здание с таким id не найдено")
+                raise HTTPException(status_code=400, detail=f"Здание с id {building_id} не найдено")
         if activity_ids is not None:
             for aid in activity_ids:
                 if not await self.activity_repo.get_by_id(aid):
-                    raise ValueError(f"Activity {aid} not found")
+                    raise ValueError(f"Не обнаружена активность с id {aid}")
         return await self.org_repo.update(org, name=name, phones=phones, building_id=building_id, activity_ids=activity_ids)
 
     async def delete(self, org: Organization) -> None:

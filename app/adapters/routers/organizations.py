@@ -7,7 +7,7 @@ from dishka.integrations.fastapi import FromDishka, inject
 
 from app.services.organiztion import OrganizationService
 
-router = APIRouter(prefix="/organizations", tags=["Organizations"])
+router = APIRouter(prefix="/organizations", tags=["Организация"])
 
 @router.get("/", response_model=List[OrganizationFull])
 @inject
@@ -59,14 +59,13 @@ async def get_by_id(org_id: int, service: FromDishka[OrganizationService]) -> Or
 async def update(org_id: int, organization: OrganizationUpdate, service: FromDishka[OrganizationService]) -> Organization:
     org = await service.get_by_id(org_id)
     if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+        raise HTTPException(status_code=404, detail=f"Организация с id {org_id} не найдена")
     return await service.update(org, **organization.model_dump(exclude_unset=True))
 
-@router.delete("/{org_id}", response_model=Dict)
+@router.delete("/{org_id}", response_model=Dict, status_code=204)
 @inject
-async def delete(org_id: int, service: FromDishka[OrganizationService]) -> Dict:
+async def delete(org_id: int, service: FromDishka[OrganizationService]):
     org = await service.get_by_id(org_id)
     if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
+        raise HTTPException(status_code=404, detail=f"Организация с id {org_id} не найдена")
     await service.delete(org)
-    return {"message": "Organization deleted"}

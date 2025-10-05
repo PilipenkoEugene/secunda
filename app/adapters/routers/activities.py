@@ -6,7 +6,7 @@ from dishka.integrations.fastapi import FromDishka, inject
 
 from app.services.activity import ActivityService
 
-router = APIRouter(prefix="/activities", tags=["Activities"])
+router = APIRouter(prefix="/activities", tags=["Деятельность"])
 
 @router.get("/", response_model=List[Activity], response_model_exclude_unset=True)
 @inject
@@ -34,11 +34,10 @@ async def update(service: FromDishka[ActivityService], activity_id: int, activit
         raise HTTPException(status_code=404, detail=f"Деятельность с id {activity_id} не найдена")
     return await service.update(activity_obj, **activity.model_dump(exclude_unset=True))
 
-@router.delete("/{activity_id}", response_model=Dict)
+@router.delete("/{activity_id}", response_model=Dict, status_code=204)
 @inject
-async def delete(activity_id: int, service: FromDishka[ActivityService]) -> Dict:
+async def delete(activity_id: int, service: FromDishka[ActivityService]):
     activity = await service.get_by_id(activity_id)
     if not activity:
         raise HTTPException(status_code=404, detail=f"Деятельность с id {activity_id} не найдена")
     await service.delete(activity_id)
-    return {"message": "Activity deleted"}

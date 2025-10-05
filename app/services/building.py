@@ -25,5 +25,5 @@ class BuildingService:
     async def delete(self, building_id: int) -> None:
         building = await self.get_by_id(building_id)
         if not building:
-            raise HTTPException(status_code=400, detail="Здание с таким id не найдено")
+            raise HTTPException(status_code=400, detail=f"Здание с id {building_id} не найдено")
         await self.building_repo.delete(building)

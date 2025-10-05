@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     yield
     await container.close()
 
-app = FastAPI(title="Org Directory API", docs_url=None, redoc_url=None)
+app = FastAPI(title="Secunda Тестовое Задание", docs_url=None, redoc_url=None)
 
 app.add_middleware(
     CORSMiddleware,

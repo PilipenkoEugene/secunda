@@ -10,7 +10,7 @@ class BuildingBase(BaseModel):
     @classmethod
     def validate_address(cls, v: str):
         if not v.strip():
-            raise ValueError("Address cannot be empty")
+            raise ValueError("Адрес не может быть пустым")
         return v
 
 class BuildingCreate(BuildingBase):
@@ -33,9 +33,9 @@ class ActivityBase(BaseModel):
     @classmethod
     def validate_name(cls, v: str):
         if not v.strip():
-            raise ValueError("Name cannot be empty")
+            raise ValueError("Имя не может быть пустым")
         if len(v) > 100:
-            raise ValueError("Name too long")
+            raise ValueError("Имя слишком длинное")
         return v
 
 class ActivityCreate(ActivityBase):
@@ -58,7 +58,7 @@ class OrganizationBase(BaseModel):
     @classmethod
     def validate_name(cls, v: str):
         if not v.strip():
-            raise ValueError("Name cannot be empty")
+            raise ValueError("Имя не может быть пустым")
         return v
 
     @field_validator('phones')
@@ -80,7 +80,7 @@ class OrganizationBase(BaseModel):
         )
         for phone in v:
             if not phone_regex.match(phone):
-                raise ValueError(f"Invalid phone format: {phone}")
+                raise ValueError(f"Неверный формат номера телефона: {phone}")
         return v
 
 class OrganizationCreate(OrganizationBase):
@@ -90,7 +90,7 @@ class OrganizationCreate(OrganizationBase):
     @classmethod
     def validate_activity_ids(cls, v: list[int]):
         if not v:
-            raise ValueError("At least one activity required")
+            raise ValueError("Необходимо указать хотя бы один вид деятельности")
         return v
 
 class OrganizationUpdate(BaseModel):
@@ -103,7 +103,7 @@ class OrganizationUpdate(BaseModel):
     @classmethod
     def validate_activity_ids(cls, v: list[int] | None):
         if v is not None and not v:
-            raise ValueError("At least one activity required")
+            raise ValueError("Необходимо указать хотя бы один вид деятельности")
         return v
 
 class Organization(OrganizationBase):
