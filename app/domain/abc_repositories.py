@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, List
-from app.domain.entities import Organization, Building, Activity
+from typing import Generic, List, TypeVar
+
+from app.domain.entities import Activity, Building, Organization
 
 T = TypeVar('T')
+
 
 class AbstractRepository(ABC, Generic[T]):
     @abstractmethod
@@ -25,8 +27,10 @@ class AbstractRepository(ABC, Generic[T]):
     async def delete(self, entity: T) -> None:
         pass
 
+
 class AbstractBuildingRepository(AbstractRepository[Building]):
     pass
+
 
 class AbstractActivityRepository(AbstractRepository[Activity]):
     @abstractmethod
@@ -40,6 +44,7 @@ class AbstractActivityRepository(AbstractRepository[Activity]):
     @abstractmethod
     async def get_depth(self, activity: Activity) -> int:
         pass
+
 
 class AbstractOrganizationRepository(AbstractRepository[Organization]):
     @abstractmethod
@@ -55,7 +60,9 @@ class AbstractOrganizationRepository(AbstractRepository[Organization]):
         pass
 
     @abstractmethod
-    async def get_in_rect(self, min_lat: float, max_lat: float, min_lon: float, max_lon: float) -> List[Organization]:
+    async def get_in_rect(
+        self, min_lat: float, max_lat: float, min_lon: float, max_lon: float
+    ) -> List[Organization]:
         pass
 
     @abstractmethod
