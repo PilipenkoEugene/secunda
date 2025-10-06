@@ -1,8 +1,12 @@
-from dishka import Provider, Scope, provide, make_async_container
-from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, AsyncSession
-from app.infrastructure.database import engine, AsyncSessionLocal
+from dishka import Provider, Scope, make_async_container, provide
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
-from app.domain.abc_repositories import AbstractBuildingRepository, AbstractActivityRepository, AbstractOrganizationRepository
+from app.domain.abc_repositories import (
+    AbstractActivityRepository,
+    AbstractBuildingRepository,
+    AbstractOrganizationRepository,
+)
+from app.infrastructure.database import AsyncSessionLocal, engine
 from app.infrastructure.repositories.activity import ActivityRepository
 from app.infrastructure.repositories.building import BuildingRepository
 from app.infrastructure.repositories.organization import OrganizationRepository
@@ -28,6 +32,7 @@ class DatabaseProvider(Provider):
         finally:
             await session.close()
 
+
 class RepositoryProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def building_repo(self, session: AsyncSession) -> AbstractBuildingRepository:
@@ -40,6 +45,7 @@ class RepositoryProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def organization_repo(self, session: AsyncSession) -> AbstractOrganizationRepository:
         return OrganizationRepository(session)
+
 
 class ServiceProvider(Provider):
     @provide(scope=Scope.REQUEST)
@@ -55,13 +61,10 @@ class ServiceProvider(Provider):
         self,
         org_repo: AbstractOrganizationRepository,
         activity_repo: AbstractActivityRepository,
-        building_repo: AbstractBuildingRepository
+        building_repo: AbstractBuildingRepository,
     ) -> OrganizationService:
         return OrganizationService(org_repo, activity_repo, building_repo)
 
+
 def create_container():
-    return make_async_container(
-        DatabaseProvider(),
-        RepositoryProvider(),
-        ServiceProvider(),
-    )
+    return make_async_container(DatabaseProvider(), RepositoryProvider(), ServiceProvider())

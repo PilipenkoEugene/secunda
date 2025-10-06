@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from app.adapters.routers import organizations, buildings, activities
+
+from app.adapters.routers import activities, buildings, organizations
 
 router = APIRouter(prefix='/secunda')
 

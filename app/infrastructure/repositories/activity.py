@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy import select, func, Integer
+from sqlalchemy import Integer, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
@@ -25,20 +25,19 @@ class ActivityRepository(BaseSqlAlchemyRepository[Activity], AbstractActivityRep
         if not root:
             return []
 
-        base = select(
-            Activity.id,
-            Activity.parent_id,
-            func.cast(0, Integer).label("level")
-        ).where(Activity.id == activity_id).cte(name="activity_tree", recursive=True)
+        base = (
+            select(Activity.id, Activity.parent_id, func.cast(0, Integer).label('level'))
+            .where(Activity.id == activity_id)
+            .cte(name='activity_tree', recursive=True)
+        )
 
         activity_alias = aliased(Activity)
-        recursive = select(
-            activity_alias.id,
-            activity_alias.parent_id,
-            (base.c.level + 1).label("level")
-        ).select_from(activity_alias).where(
-            activity_alias.parent_id == base.c.id
-        ).where(base.c.level < depth)
+        recursive = (
+            select(activity_alias.id, activity_alias.parent_id, (base.c.level + 1).label('level'))
+            .select_from(activity_alias)
+            .where(activity_alias.parent_id == base.c.id)
+            .where(base.c.level < depth)
+        )
 
         cte = base.union_all(recursive)
 
@@ -50,24 +49,18 @@ class ActivityRepository(BaseSqlAlchemyRepository[Activity], AbstractActivityRep
         if activity_id is None:
             return 0
 
-        base = select(
-            Activity.id,
-            Activity.parent_id,
-            func.cast(0, Integer).label("depth")
-        ).where(Activity.id == activity_id)
+        base = select(Activity.id, Activity.parent_id, func.cast(0, Integer).label('depth')).where(
+            Activity.id == activity_id
+        )
 
-        cte = base.cte(name="activity_path", recursive=True)
+        cte = base.cte(name='activity_path', recursive=True)
 
         activity_alias = aliased(Activity)
 
-        recursive = select(
-            activity_alias.id,
-            activity_alias.parent_id,
-            (cte.c.depth + 1).label("depth")
-        ).select_from(
-            activity_alias
-        ).where(
-            activity_alias.id == cte.c.parent_id
+        recursive = (
+            select(activity_alias.id, activity_alias.parent_id, (cte.c.depth + 1).label('depth'))
+            .select_from(activity_alias)
+            .where(activity_alias.id == cte.c.parent_id)
         )
 
         cte = cte.union_all(recursive)
