@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, aliased
 
 from app.domain.entities import Building, Activity, Organization
-from app.domain.repositories import AbstractRepository, AbstractBuildingRepository, AbstractActivityRepository
+from app.domain.repositories import AbstractRepository, AbstractBuildingRepository, AbstractActivityRepository, \
+    AbstractOrganizationRepository
 from typing import Type, TypeVar, List
 
 T = TypeVar('T')
@@ -118,7 +119,7 @@ class ActivityRepository(BaseSqlAlchemyRepository[Activity], AbstractActivityRep
         return result.scalar()
 
 
-class OrganizationRepository(BaseSqlAlchemyRepository[Organization]):
+class OrganizationRepository(BaseSqlAlchemyRepository[Organization], AbstractOrganizationRepository):
     def __init__(self, session: AsyncSession):
         super().__init__(session, Organization)
 
@@ -217,11 +218,11 @@ class OrganizationRepository(BaseSqlAlchemyRepository[Organization]):
         result = await self.session.execute(stmt)
         return result.unique().scalars().all()
 
-    async def get_by_activity(self, activity_id: int) -> List[Organization]:
+    async def get_by_activity(self, activity_ids: list[int]) -> List[Organization]:
         stmt = (
             self._with_relations(select(Organization))
             .join(Organization.activities)
-            .where(Activity.id == activity_id)
+            .where(Activity.id.in_(activity_ids))
         )
         result = await self.session.execute(stmt)
         return result.unique().scalars().all()

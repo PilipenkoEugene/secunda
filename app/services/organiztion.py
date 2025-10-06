@@ -23,9 +23,7 @@ class OrganizationService:
 
     async def get_by_activity(self, activity_id: int) -> List[Organization]:
         sub_activities = await self.activity_repo.get_sub_activities(activity_id)
-        result = []
-        for sub_activity in sub_activities:
-            result.extend(await self.org_repo.get_by_activity(sub_activity.id))
+        result = await self.org_repo.get_by_activity([sub_activity.id for sub_activity in sub_activities])
         return result
 
     async def get_in_radius(self, lat: float, lon: float, radius_km: float) -> List[Organization]:

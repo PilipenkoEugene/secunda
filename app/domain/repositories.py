@@ -47,7 +47,7 @@ class AbstractOrganizationRepository(AbstractRepository[Organization]):
         pass
 
     @abstractmethod
-    async def get_by_activity(self, activity_id: int, sub_activities: list[Activity]) -> List[Organization]:
+    async def get_by_activity(self, activity_ids: list[int]) -> List[Organization]:
         pass
 
     @abstractmethod
