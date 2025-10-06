@@ -10,7 +10,7 @@
 ``` shell
     docker-compose up -d --build
 ```
-2. Далее перейти по паре ip:port, заданным в .env файле.
+2. Далее перейти по паре localhost:8080
 3. Документацию можно найти по путям:
    1. /docs - Swagger
    2. /redoc - Redoc 
