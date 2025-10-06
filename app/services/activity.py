@@ -3,7 +3,7 @@ from typing import List
 from fastapi import HTTPException
 
 from app.domain.entities import Activity
-from app.domain.repositories import AbstractActivityRepository
+from app.domain.abc_repositories import AbstractActivityRepository
 
 
 class ActivityService:

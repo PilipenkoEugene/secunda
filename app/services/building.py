@@ -3,7 +3,7 @@ from typing import List
 from fastapi import HTTPException
 
 from app.domain.entities import Building
-from app.domain.repositories import AbstractBuildingRepository
+from app.domain.abc_repositories import AbstractBuildingRepository
 
 
 class BuildingService:

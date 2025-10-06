@@ -1,10 +1,9 @@
-
 from typing import List
 
 from fastapi import HTTPException
 
 from app.domain.entities import Organization
-from app.domain.repositories import AbstractBuildingRepository, AbstractActivityRepository, AbstractOrganizationRepository
+from app.domain.abc_repositories import AbstractBuildingRepository, AbstractActivityRepository, AbstractOrganizationRepository
 
 class OrganizationService:
     def __init__(self, org_repo: AbstractOrganizationRepository, activity_repo: AbstractActivityRepository, building_repo: AbstractBuildingRepository):

@@ -1,55 +1,11 @@
 from pydantic import BaseModel, Field, field_validator
 import re
 
-class BuildingBase(BaseModel):
-    address: str
-    latitude: float = Field(ge=-90, le=90)
-    longitude: float = Field(ge=-180, le=180)
+from app.adapters.schemas.activity import ActivitySchema
+from app.adapters.schemas.building import BuildingSchema
 
-    @field_validator('address')
-    @classmethod
-    def validate_address(cls, v: str):
-        if not v.strip():
-            raise ValueError("Адрес не может быть пустым")
-        return v
 
-class BuildingCreate(BuildingBase):
-    pass
-
-class BuildingUpdate(BaseModel):
-    address: str | None = None
-    latitude: float | None = None
-    longitude: float | None = None
-
-class Building(BuildingBase):
-    id: int
-    model_config = {"from_attributes": True}
-
-class ActivityBase(BaseModel):
-    name: str
-    parent_id: int | None = None
-
-    @field_validator('name')
-    @classmethod
-    def validate_name(cls, v: str):
-        if not v.strip():
-            raise ValueError("Имя не может быть пустым")
-        if len(v) > 100:
-            raise ValueError("Имя слишком длинное")
-        return v
-
-class ActivityCreate(ActivityBase):
-    pass
-
-class ActivityUpdate(BaseModel):
-    name: str | None = None
-    parent_id: int | None = Field(ge=1, default=None)
-
-class Activity(ActivityBase):
-    id: int
-    model_config = {"from_attributes": True}
-
-class OrganizationBase(BaseModel):
+class OrganizationBaseSchema(BaseModel):
     name: str
     phones: list[str]
     building_id: int | None
@@ -83,7 +39,7 @@ class OrganizationBase(BaseModel):
                 raise ValueError(f"Неверный формат номера телефона: {phone}")
         return v
 
-class OrganizationCreate(OrganizationBase):
+class OrganizationCreateSchema(OrganizationBaseSchema):
     activity_ids: list[int]
 
     @field_validator('activity_ids')
@@ -93,7 +49,7 @@ class OrganizationCreate(OrganizationBase):
             raise ValueError("Необходимо указать хотя бы один вид деятельности")
         return v
 
-class OrganizationUpdate(BaseModel):
+class OrganizationUpdateSchema(BaseModel):
     name: str | None = None
     phones: list[str] | None = None
     building_id: int | None = None
@@ -106,23 +62,23 @@ class OrganizationUpdate(BaseModel):
             raise ValueError("Необходимо указать хотя бы один вид деятельности")
         return v
 
-class Organization(OrganizationBase):
+class OrganizationSchema(OrganizationBaseSchema):
     id: int
     model_config = {"from_attributes": True}
 
-class OrganizationFull(Organization):
-    building: Building | None
-    activities: list[Activity]
+class OrganizationFullSchema(OrganizationSchema):
+    building: BuildingSchema | None
+    activities: list[ActivitySchema]
 
-class SearchByName(BaseModel):
+class SearchByNameSchema(BaseModel):
     name: str = Field(min_length=1)
 
-class RadiusSearch(BaseModel):
+class RadiusSearchSchema(BaseModel):
     lat: float = Field(ge=-90, le=90)
     lon: float = Field(ge=-180, le=180)
     radius_km: float = Field(gt=0)
 
-class RectangleSearch(BaseModel):
+class RectangleSearchSchema(BaseModel):
     min_lat: float = Field(ge=-90, le=90)
     max_lat: float = Field(ge=-90, le=90)
     min_lon: float = Field(ge=-180, le=180)

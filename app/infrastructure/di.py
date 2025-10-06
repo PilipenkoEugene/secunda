@@ -1,9 +1,11 @@
 from dishka import Provider, Scope, provide, make_async_container
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, AsyncSession
 from app.infrastructure.database import engine, AsyncSessionLocal
-from app.infrastructure.repositories import BuildingRepository, ActivityRepository, OrganizationRepository
 
-from app.domain.repositories import AbstractBuildingRepository, AbstractActivityRepository, AbstractOrganizationRepository
+from app.domain.abc_repositories import AbstractBuildingRepository, AbstractActivityRepository, AbstractOrganizationRepository
+from app.infrastructure.repositories.activity import ActivityRepository
+from app.infrastructure.repositories.building import BuildingRepository
+from app.infrastructure.repositories.organization import OrganizationRepository
 from app.services.activity import ActivityService
 from app.services.building import BuildingService
 from app.services.organiztion import OrganizationService

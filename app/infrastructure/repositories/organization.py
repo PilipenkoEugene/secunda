@@ -1,122 +1,14 @@
 import math
+from typing import List
 
 from fastapi import HTTPException
-from sqlalchemy import select, func, Integer
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, aliased
+from sqlalchemy.orm import joinedload
 
+from app.domain.abc_repositories import AbstractOrganizationRepository
 from app.domain.entities import Building, Activity, Organization
-from app.domain.repositories import AbstractRepository, AbstractBuildingRepository, AbstractActivityRepository, \
-    AbstractOrganizationRepository
-from typing import Type, TypeVar, List
-
-T = TypeVar('T')
-
-
-class BaseSqlAlchemyRepository(AbstractRepository[T]):
-    def __init__(self, session: AsyncSession, model: Type[T]):
-        self.session = session
-        self.model = model
-
-    async def get_all(self) -> List[T]:
-        result = await self.session.execute(select(self.model))
-        return result.scalars().all()
-
-    async def get_by_id(self, entity_id: int) -> T | None:
-        result = await self.session.execute(select(self.model).filter(self.model.id == entity_id))
-        return result.scalars().first()
-
-    async def create(self, **kwargs) -> T:
-        entity = self.model(**kwargs)
-        self.session.add(entity)
-        await self.session.commit()
-        await self.session.refresh(entity)
-        return entity
-
-    async def update(self, entity: T, **kwargs) -> T:
-        for key, value in kwargs.items():
-            if value is not None:
-                setattr(entity, key, value)
-        await self.session.commit()
-        await self.session.refresh(entity)
-        return entity
-
-    async def delete(self, entity: T) -> None:
-        await self.session.delete(entity)
-        await self.session.commit()
-
-
-class BuildingRepository(BaseSqlAlchemyRepository[Building], AbstractBuildingRepository):
-    def __init__(self, session: AsyncSession):
-        super().__init__(session, Building)
-
-
-class ActivityRepository(BaseSqlAlchemyRepository[Activity], AbstractActivityRepository):
-    def __init__(self, session: AsyncSession):
-        super().__init__(session, Activity)
-
-    async def get_by_name(self, name: str) -> Activity | None:
-        result = await self.session.execute(select(Activity).filter(Activity.name == name))
-        return result.scalars().first()
-
-    async def get_sub_activities(self, activity_id: int, depth: int = 3) -> List[Activity]:
-        if depth <= 0:
-            return []
-
-        root = await self.get_by_id(activity_id)
-        if not root:
-            return []
-
-        base = select(
-            Activity.id,
-            Activity.parent_id,
-            func.cast(0, Integer).label("level")
-        ).where(Activity.id == activity_id).cte(name="activity_tree", recursive=True)
-
-        activity_alias = aliased(Activity)
-        recursive = select(
-            activity_alias.id,
-            activity_alias.parent_id,
-            (base.c.level + 1).label("level")
-        ).select_from(activity_alias).where(
-            activity_alias.parent_id == base.c.id
-        ).where(base.c.level < depth)
-
-        cte = base.union_all(recursive)
-
-        stmt = select(Activity).where(Activity.id.in_(select(cte.c.id)))
-        result = await self.session.execute(stmt)
-        return result.scalars().all()
-
-    async def get_depth(self, activity_id: int) -> int:
-        if activity_id is None:
-            return 0
-
-        base = select(
-            Activity.id,
-            Activity.parent_id,
-            func.cast(0, Integer).label("depth")
-        ).where(Activity.id == activity_id)
-
-        cte = base.cte(name="activity_path", recursive=True)
-
-        activity_alias = aliased(Activity)
-
-        recursive = select(
-            activity_alias.id,
-            activity_alias.parent_id,
-            (cte.c.depth + 1).label("depth")
-        ).select_from(
-            activity_alias
-        ).where(
-            activity_alias.id == cte.c.parent_id
-        )
-
-        cte = cte.union_all(recursive)
-
-        stmt = select(func.coalesce(func.max(cte.c.depth), 0))
-        result = await self.session.execute(stmt)
-        return result.scalar()
+from app.infrastructure.repositories.base import BaseSqlAlchemyRepository
 
 
 class OrganizationRepository(BaseSqlAlchemyRepository[Organization], AbstractOrganizationRepository):

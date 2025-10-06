@@ -1,19 +1,19 @@
 from typing import List
 
 from fastapi import APIRouter, HTTPException
-from app.adapters.schemas import Building, BuildingCreate, BuildingUpdate
 from dishka.integrations.fastapi import FromDishka, inject
 
+from app.adapters.schemas.building import BuildingSchema, BuildingCreateSchema, BuildingUpdateSchema
 from app.services.building import BuildingService
 
 router = APIRouter(prefix="/buildings", tags=["Здание"])
 
-@router.get("/", response_model=List[Building])
+@router.get("/", response_model=List[BuildingSchema])
 @inject
 async def get_all(service: FromDishka[BuildingService]):
     return await service.get_all()
 
-@router.get("/{building_id}", response_model=Building)
+@router.get("/{building_id}", response_model=BuildingSchema)
 @inject
 async def get_by_id(building_id: int, service: FromDishka[BuildingService]):
     building = await service.get_by_id(building_id)
@@ -21,14 +21,14 @@ async def get_by_id(building_id: int, service: FromDishka[BuildingService]):
         raise HTTPException(status_code=404, detail=f"Здание с id {building_id} не найдено")
     return building
 
-@router.post("/", response_model=Building)
+@router.post("/", response_model=BuildingSchema)
 @inject
-async def create(building: BuildingCreate, service: FromDishka[BuildingService]):
+async def create(building: BuildingCreateSchema, service: FromDishka[BuildingService]):
     return await service.create(**building.model_dump())
 
-@router.put("/{building_id}", response_model=Building)
+@router.put("/{building_id}", response_model=BuildingSchema)
 @inject
-async def update(building_id: int, building: BuildingUpdate, service: FromDishka[BuildingService]):
+async def update(building_id: int, building: BuildingUpdateSchema, service: FromDishka[BuildingService]):
     building_obj = await service.get_by_id(building_id)
     if not building_obj:
         raise HTTPException(status_code=404, detail=f"Здание с id {building_id} не найдено")

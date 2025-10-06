@@ -2,7 +2,7 @@ import asyncio
 
 from app.infrastructure.database import engine, AsyncSessionLocal
 from app.domain.entities import Base, Building, Activity, Organization, OrganizationActivity
-from app.infrastructure.repositories import OrganizationRepository
+from app.infrastructure.repositories.organization import OrganizationRepository
 
 
 async def seed_data():
