@@ -17,7 +17,7 @@ class ActivityService:
         return await self.activity_repo.get_by_id(activity_id)
 
     async def create(self, name: str, parent_id: int = None) -> Activity:
-        if parent_id:
+        if parent_id is not None:
             parent = await self.activity_repo.get_by_id(parent_id)
             if not parent:
                 raise HTTPException(status_code=400, detail="Родительский вид деятельности не обнаружен")

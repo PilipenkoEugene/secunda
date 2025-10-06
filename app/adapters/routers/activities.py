@@ -21,7 +21,7 @@ async def get_by_id(activity_id: int, service: FromDishka[ActivityService]) -> A
         raise HTTPException(status_code=404, detail=f"Деятельность с id {activity_id} не найдена")
     return activity
 
-@router.post("/", response_model=Activity, response_model_exclude_unset=True)
+@router.post("/", response_model=Activity, response_model_exclude_unset=True, summary="Создание Деятельности. Ограничено 3 уровнем вложенности")
 @inject
 async def create(activity: ActivityCreate, service: FromDishka[ActivityService]) -> Activity:
     return await service.create(**activity.model_dump())

@@ -21,32 +21,32 @@ async def get_all(
 async def create(organization: OrganizationCreate, service: FromDishka[OrganizationService]) -> Organization:
     return await service.create(**organization.model_dump())
 
-@router.get("/search", response_model=List[OrganizationFull])
+@router.get("/search", response_model=List[OrganizationFull], summary="Поиск организации по названию")
 @inject
 async def search_by_name(service: FromDishka[OrganizationService], name: str) -> List[OrganizationFull]:
     return await service.search_by_name(name)
 
-@router.get("/by_building/{building_id}", response_model=List[OrganizationFull], response_model_exclude_unset=True)
+@router.get("/by_building/{building_id}", response_model=List[OrganizationFull], response_model_exclude_unset=True, summary="Список всех организаций находящихся в конкретном здании")
 @inject
 async def get_by_building(building_id: int, service: FromDishka[OrganizationService]) -> List[OrganizationFull]:
     return await service.get_by_building(building_id)
 
-@router.get("/by_activity/{activity_id}", response_model=List[OrganizationFull], response_model_exclude_unset=True)
+@router.get("/by_activity/{activity_id}", response_model=List[OrganizationFull], response_model_exclude_unset=True, summary="Поиск по деятельности (с учетом поддеятельностей)")
 @inject
 async def get_by_activity(activity_id: int, service: FromDishka[OrganizationService]) -> List[OrganizationFull]:
     return await service.get_by_activity(activity_id)
 
-@router.get("/by_radius", response_model=List[OrganizationFull], response_model_exclude_unset=True)
+@router.get("/by_radius", response_model=List[OrganizationFull], response_model_exclude_unset=True, summary="Список организаций, которые находятся в заданном радиусе")
 @inject
 async def get_in_radius(service: FromDishka[OrganizationService], params: RadiusSearch = Depends()) -> List[OrganizationFull]:
     return await service.get_in_radius(params.lat, params.lon, params.radius_km)
 
-@router.get("/by_rectangle", response_model=List[OrganizationFull], response_model_exclude_unset=True)
+@router.get("/by_rectangle", response_model=List[OrganizationFull], response_model_exclude_unset=True, summary="Список организаций, которые находятся в заданной прямоугольной области")
 @inject
 async def get_in_rect(service: FromDishka[OrganizationService], params: RectangleSearch = Depends()) -> List[OrganizationFull]:
     return await service.get_in_rect(params.min_lat, params.max_lat, params.min_lon, params.max_lon)
 
-@router.get("/{org_id}", response_model=OrganizationFull, response_model_exclude_unset=True)
+@router.get("/{org_id}", response_model=OrganizationFull, response_model_exclude_unset=True, summary="Вывод информации об организации по её идентификатору")
 @inject
 async def get_by_id(org_id: int, service: FromDishka[OrganizationService]) -> OrganizationFull:
     org = await service.get_by_id(org_id)
