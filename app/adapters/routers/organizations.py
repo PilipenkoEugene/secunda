@@ -16,7 +16,7 @@ async def get_all(
 ) -> List[OrganizationFull]:
     return await service.get_all()
 
-@router.post("/", response_model=Organization, response_model_exclude_unset=True)
+@router.post("/", response_model=Organization)
 @inject
 async def create(organization: OrganizationCreate, service: FromDishka[OrganizationService]) -> Organization:
     return await service.create(**organization.model_dump())
@@ -26,27 +26,27 @@ async def create(organization: OrganizationCreate, service: FromDishka[Organizat
 async def search_by_name(service: FromDishka[OrganizationService], name: str) -> List[OrganizationFull]:
     return await service.search_by_name(name)
 
-@router.get("/by_building/{building_id}", response_model=List[OrganizationFull], response_model_exclude_unset=True, summary="Список всех организаций находящихся в конкретном здании")
+@router.get("/by_building/{building_id}", response_model=List[OrganizationFull], summary="Список всех организаций находящихся в конкретном здании")
 @inject
 async def get_by_building(building_id: int, service: FromDishka[OrganizationService]) -> List[OrganizationFull]:
     return await service.get_by_building(building_id)
 
-@router.get("/by_activity/{activity_id}", response_model=List[OrganizationFull], response_model_exclude_unset=True, summary="Поиск по деятельности (с учетом поддеятельностей)")
+@router.get("/by_activity/{activity_id}", response_model=List[OrganizationFull], summary="Поиск по деятельности (с учетом поддеятельностей)")
 @inject
 async def get_by_activity(activity_id: int, service: FromDishka[OrganizationService]) -> List[OrganizationFull]:
     return await service.get_by_activity(activity_id)
 
-@router.get("/by_radius", response_model=List[OrganizationFull], response_model_exclude_unset=True, summary="Список организаций, которые находятся в заданном радиусе")
+@router.get("/by_radius", response_model=List[OrganizationFull], summary="Список организаций, которые находятся в заданном радиусе")
 @inject
 async def get_in_radius(service: FromDishka[OrganizationService], params: RadiusSearch = Depends()) -> List[OrganizationFull]:
     return await service.get_in_radius(params.lat, params.lon, params.radius_km)
 
-@router.get("/by_rectangle", response_model=List[OrganizationFull], response_model_exclude_unset=True, summary="Список организаций, которые находятся в заданной прямоугольной области")
+@router.get("/by_rectangle", response_model=List[OrganizationFull], summary="Список организаций, которые находятся в заданной прямоугольной области")
 @inject
 async def get_in_rect(service: FromDishka[OrganizationService], params: RectangleSearch = Depends()) -> List[OrganizationFull]:
     return await service.get_in_rect(params.min_lat, params.max_lat, params.min_lon, params.max_lon)
 
-@router.get("/{org_id}", response_model=OrganizationFull, response_model_exclude_unset=True, summary="Вывод информации об организации по её идентификатору")
+@router.get("/{org_id}", response_model=OrganizationFull, summary="Вывод информации об организации по её идентификатору")
 @inject
 async def get_by_id(org_id: int, service: FromDishka[OrganizationService]) -> OrganizationFull:
     org = await service.get_by_id(org_id)
@@ -54,7 +54,7 @@ async def get_by_id(org_id: int, service: FromDishka[OrganizationService]) -> Or
         raise HTTPException(status_code=404, detail=f"Организация с id {org_id} не найдена")
     return org
 
-@router.put("/{org_id}", response_model=Organization, response_model_exclude_unset=True)
+@router.put("/{org_id}", response_model=Organization)
 @inject
 async def update(org_id: int, organization: OrganizationUpdate, service: FromDishka[OrganizationService]) -> Organization:
     org = await service.get_by_id(org_id)

@@ -8,12 +8,12 @@ from app.services.activity import ActivityService
 
 router = APIRouter(prefix="/activities", tags=["Деятельность"])
 
-@router.get("/", response_model=List[Activity], response_model_exclude_unset=True)
+@router.get("/", response_model=List[Activity])
 @inject
 async def get_all(service: FromDishka[ActivityService]) -> List[Activity]:
     return await service.get_all()
 
-@router.get("/{activity_id}", response_model=Activity, response_model_exclude_unset=True)
+@router.get("/{activity_id}", response_model=Activity)
 @inject
 async def get_by_id(activity_id: int, service: FromDishka[ActivityService]) -> Activity:
     activity = await service.get_by_id(activity_id)
@@ -21,12 +21,12 @@ async def get_by_id(activity_id: int, service: FromDishka[ActivityService]) -> A
         raise HTTPException(status_code=404, detail=f"Деятельность с id {activity_id} не найдена")
     return activity
 
-@router.post("/", response_model=Activity, response_model_exclude_unset=True, summary="Создание Деятельности. Ограничено 3 уровнем вложенности")
+@router.post("/", response_model=Activity, summary="Создание Деятельности. Ограничено 3 уровнем вложенности")
 @inject
 async def create(activity: ActivityCreate, service: FromDishka[ActivityService]) -> Activity:
     return await service.create(**activity.model_dump())
 
-@router.put("/{activity_id}", response_model=Activity, response_model_exclude_unset=True)
+@router.put("/{activity_id}", response_model=Activity)
 @inject
 async def update(service: FromDishka[ActivityService], activity_id: int, activity: ActivityUpdate = Depends()) -> Activity:
     activity_obj = await service.get_by_id(activity_id)
