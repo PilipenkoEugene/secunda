@@ -1,9 +1,7 @@
 import asyncio
 
-from sqlalchemy import text
-
 from app.infrastructure.database import engine, AsyncSessionLocal
-from app.domain.entities import Base, Building, Activity, Organization
+from app.domain.entities import Base, Building, Activity, Organization, OrganizationActivity
 from app.infrastructure.repositories import OrganizationRepository
 
 
@@ -30,41 +28,34 @@ async def seed_data():
             )
             session.add_all([building1, building2])
             await session.flush()
-            building1_id = building1.id
-            building2_id = building2.id
 
             activity1 = Activity(name="Еда", parent_id=None)
             activity2 = Activity(name="Автомобили", parent_id=None)
             session.add_all([activity1, activity2])
             await session.flush()
-            activity1_id = activity1.id
-            activity2_id = activity2.id
 
-            activity3 = Activity(name="Мясная продукция", parent_id=activity1_id)
-            activity4 = Activity(name="Молочная продукция", parent_id=activity1_id)
-            activity5 = Activity(name="Запчасти", parent_id=activity2_id)
-            activity6 = Activity(name="Аксессуары", parent_id=activity2_id)
+            activity3 = Activity(name="Мясная продукция", parent_id=activity1.id)
+            activity4 = Activity(name="Молочная продукция", parent_id=activity1.id)
+            activity5 = Activity(name="Запчасти", parent_id=activity2.id)
+            activity6 = Activity(name="Аксессуары", parent_id=activity2.id)
             session.add_all([activity3, activity4, activity5, activity6])
             await session.flush()
-            activity3_id = activity3.id
-            activity4_id = activity4.id
 
             organization = Organization(
                 name="ООО Рога и Копыта",
                 phones=["+79991234567"],
-                building_id=building1_id
+                building_id=building1.id
             )
             session.add(organization)
             await session.flush()
-            organization_id = organization.id
 
-            activity_ids = [activity1_id, activity3_id, activity4_id]
-            for activity_id in activity_ids:
-                await session.execute(
-                    text("INSERT INTO organization_activity (organization_id, activity_id) VALUES (:org_id, :act_id)"),
-                    {"org_id": organization_id, "act_id": activity_id}
-                )
-            await session.commit()
+            links = [
+                OrganizationActivity(organization_id=organization.id, activity_id=activity1.id),
+                OrganizationActivity(organization_id=organization.id, activity_id=activity3.id),
+                OrganizationActivity(organization_id=organization.id, activity_id=activity4.id),
+            ]
+            session.add_all(links)
+
             print("Seed data inserted successfully.")
 
 if __name__ == "__main__":
