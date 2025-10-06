@@ -5,11 +5,9 @@ from sqlalchemy import text
 from app.infrastructure.database import engine, AsyncSessionLocal
 from app.domain.entities import Base, Building, Activity, Organization
 from app.infrastructure.repositories import OrganizationRepository
-from app.settings import settings
 
 
 async def seed_data():
-    print("DATABASE_URL:", settings.DATABASE_URL)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
