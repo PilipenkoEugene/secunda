@@ -5,7 +5,6 @@ from app.definitions import ENV_FILE
 
 class Settings(BaseSettings):
     APP_HOST: str = "0.0.0.0"
-    APP_PORT: int = 8000
     API_KEY: str = "key"
     ECHO: bool = False
     POSTGRES_USER: str = "user"

@@ -43,4 +43,4 @@ def overridden_redoc():
     return get_redoc_html(openapi_url="/openapi.json", title="redoc")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host=settings.APP_HOST, port=settings.APP_PORT)
+    uvicorn.run(app, host=settings.APP_HOST, port=8080)
